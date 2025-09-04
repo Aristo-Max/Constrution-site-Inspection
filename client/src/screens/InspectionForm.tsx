@@ -14,7 +14,7 @@ type InspectionFormProps = {
   navigation: InspectionFormScreenNavigationProp;
 };
 
-export default function InspectionForm({ navigation }: InspectionFormProps) {
+export default function InspectionForm({ }: InspectionFormProps) {
   const camera = useRef<Camera>(null);
 // const devices = useCameraDevices();
 const device = useCameraDevice("back");
@@ -88,37 +88,15 @@ const device = useCameraDevice("back");
 
 const onSpeechStart = () => {
   console.log("Speech started");
-  // setIsRecording(true);
+  setIsRecording(true);
 };
 
 const onSpeechEnd = () => {
   console.log("Speech ended");
-  // setIsRecording(false);
+  setIsRecording(false);
 };
 
-// const onSpeechResults = (event) => {
-//   const results = event.value;
-//   if (results && results.length > 0) {
-//     setNote((prev) => prev + " " + results[0]);
-//   }
-// };
-
-  //   const requestMicrophonePermission = async () => {
-  //   if (Platform.OS === 'android') {
-  //     const granted = await PermissionsAndroid.request(
-  //       PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-  //       {
-  //         title: 'Microphone Permission',
-  //         message: 'This app needs access to your microphone to record speech.',
-  //         buttonPositive: 'OK',
-  //       }
-  //     );
-  //     return granted === PermissionsAndroid.RESULTS.GRANTED;
-  //   }
-  //   return true;
-  // };
-
-   const startRecording = async () => {
+const startRecording = async () => {
   try {
      if (!hasMicPermission) {
         Alert.alert("Microphone permission denied");
