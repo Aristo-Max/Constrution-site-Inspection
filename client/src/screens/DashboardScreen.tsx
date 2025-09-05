@@ -1,8 +1,10 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import colors from "../constants/color";
+import { RouteProp, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App'; // Adjust the path as necessary
+import { useProperty } from "../components/PropertyContext";
 
 type DashboardScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Dashboard'>;
 
@@ -10,7 +12,50 @@ type DashboardProps = {
   navigation: DashboardScreenNavigationProp;
 };
 
-const DashboardScreen = ({navigation}:DashboardProps) => {
+// export type NoteItem = {
+//   id: number;
+//   description: string;
+//   inspector: string;
+//   photos: string[];
+// };
+
+// export type PropertyDetails = {
+//   id: string;
+//   code: string;
+//   name: string;
+//   address?: string;
+//   status: "completed" | "in progress";
+//   date: string;
+//   notes: NoteItem[];
+// };
+
+const DashboardScreen = ({ navigation }: DashboardProps) => {
+  //   const route = useRoute<RouteProp<RootStackParamList, "Dashboard">>(); // 👈 define route here
+
+  // const { properties, setProperties } = useProperty();
+
+    const { inspections, loading } = useProperty();
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+//   useEffect(() => {
+//   if (route.params?.updatedNote && route.params?.propertyId) {
+//     const { updatedNote, propertyId } = route.params;
+
+//     setProperties(prev =>
+//       prev.map(p =>
+//         p.id === propertyId
+//           ? { ...p, notes: [...p.notes, updatedNote] } // ✅ updatedNote is guaranteed
+//           : p
+//       )
+//     );
+//   }
+// }, [route.params]);
+
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
@@ -19,7 +64,7 @@ const DashboardScreen = ({navigation}:DashboardProps) => {
         <Text style={styles.headerSubtitle}>
           Professional property inspections with voice-to-text technology
         </Text>
-        <TouchableOpacity style={styles.startButton} onPress={() =>{console.log("Navigating to InspectionForm..."); navigation.navigate("InspectionForm")}}>
+        <TouchableOpacity style={styles.startButton} onPress={() => navigation.navigate('NewInspection')}>
           <Text style={styles.startButtonText}>+ Start New Inspection</Text>
         </TouchableOpacity>
       </View>
@@ -48,24 +93,43 @@ const DashboardScreen = ({navigation}:DashboardProps) => {
             <Text style={styles.viewAll}>View All Reports</Text>
           </TouchableOpacity>
         </View>
+           {inspections.length > 0 ? (
+          inspections.map((item)  => (
+          <View style={styles.inspectionCard}>
+            <Text style={styles.inspectionTitle}>
+              {item.id} <Text style={item.status === 'Completed' ? styles.completed : styles.inProgress}>
+                {item.status}
+              </Text>
+            </Text>
+            <Text style={styles.inspectionDate}>{item.date}</Text>
+              <Text>
+        {item.notes?.length ?? 0} notes •{" "}
+        {item.notes?.reduce((acc, note) => acc + (note.photos?.length ?? 0), 0) ?? 0} photos
+      </Text>
+             <TouchableOpacity onPress={() => navigation.replace("InspectionForm", {
+              propertyId: item.id,
+              properties: inspections,
+            })}>
+              <Text style={styles.viewDetails}>View / Add Notes</Text>
+            </TouchableOpacity>
 
-        <View style={styles.inspectionCard}>
-          <Text style={styles.inspectionTitle}>PROP-2024-001 <Text style={styles.completed}>completed</Text></Text>
-          <Text style={styles.inspectionDate}>15/01/2024</Text>
-          <Text style={styles.meta}>5 notes • 8 photos</Text>
-          <TouchableOpacity>
-            <Text style={styles.viewDetails}>View Details</Text>
+            
+        {/* Show Generate Report button ONLY for completed */}
+        {item.status === 'Completed' && (
+          <TouchableOpacity
+            style={styles.reportBtn}
+            onPress={() => navigation.navigate("ReportScreen", {
+                  property: item,
+                  notes:  item.notes ?? [],
+                })}
+          >
+            <Text style={styles.reportText}>Generate Report</Text>
           </TouchableOpacity>
-        </View>
-
-        <View style={styles.inspectionCard}>
-          <Text style={styles.inspectionTitle}>PROP-2024-002 <Text style={styles.inProgress}>in progress</Text></Text>
-          <Text style={styles.inspectionDate}>14/01/2024</Text>
-          <Text style={styles.meta}>3 notes • 4 photos</Text>
-          <TouchableOpacity>
-            <Text style={styles.viewDetails}>View Details</Text>
-          </TouchableOpacity>
-        </View>
+        )}
+          </View>
+        ))
+        ) : null}
+     
       </View>
     </ScrollView>
   );
@@ -186,4 +250,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 5,
   },
+   reportBtn: {
+    backgroundColor: '#FF8C00',
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  reportText: { color: 'white', fontWeight: 'bold' },
 });

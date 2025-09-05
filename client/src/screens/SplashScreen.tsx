@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App'; // Adjust the path as necessary
+import colors from "../constants/color";  
 
 type SplashScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Splash'>;
 
@@ -51,7 +52,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20, textAlign: "center" },
   subtitle: { fontSize: 16, color: "#555", textAlign: "center", marginBottom: 40 },
   button: {
-    backgroundColor: "#007AFF",
+    backgroundColor: colors.secondary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
