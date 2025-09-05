@@ -564,7 +564,7 @@ export default function InspectionForm({ navigation, route }: InspectionFormProp
     const newNote: NoteItem = {
       id: Date.now().toString(),
       description: note,
-      inspector: "Sharma", // This can be dynamic later
+      inspector: property.inspector, // This can be dynamic later
       photos: [...photos],
     };
     const updatedProperty = {
@@ -592,6 +592,13 @@ export default function InspectionForm({ navigation, route }: InspectionFormProp
   }
   return (
     <ScrollView style={styles.container}>
+      <TouchableOpacity
+                // style={styles.backButton}
+                onPress={() => navigation.navigate('Dashboard')} // go home
+              >
+                {/* <Icon name="arrow-back" size={24} color="#fff" /> */}
+                <Text style={{ color: '#000', marginLeft: 10, fontSize: 20 }}>{"<-"}</Text>
+              </TouchableOpacity>
       {property.notes.map((n: NoteItem) => (
         <View key={n.id} style={styles.noteCard}>
           <Text style={styles.noteInspector}>{n.inspector}</Text>
@@ -651,18 +658,25 @@ export default function InspectionForm({ navigation, route }: InspectionFormProp
           <Text style={styles.saveBtnText}>Complete Inspection</Text>
         </TouchableOpacity>
       </View>
-      <Modal visible={!!zoomImage} transparent={true}>
+      {/* <Modal visible={!!zoomImage} transparent={true}>
         <View style={styles.modalBackground}>
           <Pressable style={{ flex: 1 }} onPress={() => setZoomImage(null)} />
           {zoomImage && <Image source={{ uri: zoomImage }} style={styles.zoomImage} />}
           <Pressable style={{ flex: 1 }} onPress={() => setZoomImage(null)} />
         </View>
-      </Modal>
+      </Modal> */}
+      <Modal visible={!!zoomImage} transparent animationType="fade" onRequestClose={() => setZoomImage(null)}>
+              <Pressable style={styles.modalBg} onPress={() => setZoomImage(null)}>
+                <Image source={{ uri: zoomImage! }} style={styles.zoom} />
+              </Pressable>
+            </Modal>
     </ScrollView>
   );
 }
 // Styles from your teammate's file
 const styles = StyleSheet.create({
+    modalBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.9)", justifyContent: "center", alignItems: "center" },
+  zoom: { width: "90%", height: "70%", resizeMode: "contain" },
   container: { flex: 1, backgroundColor: "#F5F7FA", padding: 20, paddingTop: 40},
   card: {
     backgroundColor: colors.white,
