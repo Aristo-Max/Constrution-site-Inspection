@@ -95,7 +95,7 @@ const DashboardScreen = ({ navigation }: DashboardProps) => {
           inspections.map((item)  => (
           <View style={styles.inspectionCard}>
             <Text style={styles.inspectionTitle}>
-              {item.id} <Text style={item.status === 'Completed' ? styles.completed : styles.inProgress}>
+              {item.name} <Text style={item.status === 'Completed' ? styles.completed : styles.inProgress}>
                 {item.status}
               </Text>
             </Text>
