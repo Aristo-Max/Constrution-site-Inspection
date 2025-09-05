@@ -1,12 +1,22 @@
 {
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
-    "jsx": "react-jsx",                 // 👈 React 18 JSX transform
-    "esModuleInterop": true,            // 👈 allow default imports
+    "jsx": "react-jsx",                 
+    "esModuleInterop": true,            
     "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,               // 👈 skip type checking node_modules
-    "strict": true                      // optional, but recommended
+    "skipLibCheck": true,               
+    "strict": true,
+    "baseUrl": "./",
+    "paths": {
+      "*": ["types/*", "*"]   // ✅ fallback to node_modules too
+    }
   },
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "src",
+    "types",
+    "global.d.ts"   // ✅ force-include global.d.ts
+  ],
   "exclude": ["node_modules", "Pods"]
 }

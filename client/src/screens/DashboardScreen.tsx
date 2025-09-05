@@ -1,17 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Alert,
-} from 'react-native';
-import { useIsFocused } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import colors from '../constants/color';
+import React, { useEffect, useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import colors from "../constants/color";
+import { RouteProp, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
+import { RootStackParamList } from '../App'; // Adjust the path as necessary
+import { useProperty } from "../components/PropertyContext";
 
 type DashboardScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -22,62 +15,49 @@ type DashboardProps = {
   navigation: DashboardScreenNavigationProp;
 };
 
-// Define a type for our inspection objects and EXPORT it
-export type Inspection = {
-  id: string;
-  name: string;
-  address: string;
-  inspector: string;
-  status: string;
-  date: string;
-};
+// export type NoteItem = {
+//   id: number;
+//   description: string;
+//   inspector: string;
+//   photos: string[];
+// };
+
+// export type PropertyDetails = {
+//   id: string;
+//   code: string;
+//   name: string;
+//   address?: string;
+//   status: "completed" | "in progress";
+//   date: string;
+//   notes: NoteItem[];
+// };
 
 const DashboardScreen = ({ navigation }: DashboardProps) => {
-  const [inspections, setInspections] = useState<Inspection[]>([]);
-  const isFocused = useIsFocused();
+  //   const route = useRoute<RouteProp<RootStackParamList, "Dashboard">>(); // 👈 define route here
 
-  const loadInspections = async () => {
-    try {
-      const savedInspections = await AsyncStorage.getItem('inspections');
-      if (savedInspections !== null) {
-        setInspections(JSON.parse(savedInspections));
-      } else {
-        setInspections([]);
-      }
-    } catch (error) {
-      console.error('Failed to load inspections.', error);
-    }
-  };
+  // const { properties, setProperties } = useProperty();
 
-  useEffect(() => {
-    if (isFocused) {
-      loadInspections();
-    }
-  }, [isFocused]);
-
-  const handleDelete = (inspectionId: string) => {
-    Alert.alert(
-      'Delete Inspection',
-      'Are you sure you want to delete this inspection?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'OK',
-          onPress: async () => {
-            const updatedInspections = inspections.filter(
-              item => item.id !== inspectionId,
-            );
-            setInspections(updatedInspections);
-            await AsyncStorage.setItem(
-              'inspections',
-              JSON.stringify(updatedInspections),
-            );
-          },
-          style: 'destructive',
-        },
-      ],
+    const { inspections, loading } = useProperty();
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
     );
-  };
+  }
+//   useEffect(() => {
+//   if (route.params?.updatedNote && route.params?.propertyId) {
+//     const { updatedNote, propertyId } = route.params;
+
+//     setProperties(prev =>
+//       prev.map(p =>
+//         p.id === propertyId
+//           ? { ...p, notes: [...p.notes, updatedNote] } // ✅ updatedNote is guaranteed
+//           : p
+//       )
+//     );
+//   }
+// }, [route.params]);
 
   return (
     <ScrollView style={styles.container}>
@@ -87,6 +67,9 @@ const DashboardScreen = ({ navigation }: DashboardProps) => {
         <Text style={styles.headerSubtitle}>
           Professional property inspections with voice-to-text technology
         </Text>
+        <TouchableOpacity style={styles.startButton} onPress={() => navigation.navigate('NewInspection')}>
+          <Text style={styles.startButtonText}>+ Start New Inspection</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Stats Row */}
@@ -108,41 +91,43 @@ const DashboardScreen = ({ navigation }: DashboardProps) => {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Inspections</Text>
         </View>
+           {inspections.length > 0 ? (
+          inspections.map((item)  => (
+          <View style={styles.inspectionCard}>
+            <Text style={styles.inspectionTitle}>
+              {item.id} <Text style={item.status === 'Completed' ? styles.completed : styles.inProgress}>
+                {item.status}
+              </Text>
+            </Text>
+            <Text style={styles.inspectionDate}>{item.date}</Text>
+              <Text>
+        {item.notes?.length ?? 0} notes •{" "}
+        {item.notes?.reduce((acc, note) => acc + (note.photos?.length ?? 0), 0) ?? 0} photos
+      </Text>
+             <TouchableOpacity onPress={() => navigation.replace("InspectionForm", {
+              propertyId: item.id,
+              properties: inspections,
+            })}>
+              <Text style={styles.viewDetails}>View / Add Notes</Text>
+            </TouchableOpacity>
 
-        {inspections.length > 0 ? (
-          inspections.map(item => (
-            <View key={item.id} style={styles.inspectionCard}>
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate('InspectionForm', { inspection: item })
-                }
-              >
-                <Text style={styles.inspectionTitle}>
-                  {item.name}{' '}
-                  <Text style={styles.inProgress}>{item.status}</Text>
-                </Text>
-                <Text style={styles.inspectionDate}>{item.date}</Text>
-                <Text style={styles.meta}>{item.address}</Text>
-              </TouchableOpacity>
-              <View style={styles.cardActions}>
-                <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate('InspectionForm', { inspection: item })
-                  }
-                >
-                  <Text style={styles.viewDetails}>View Details</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                  <Text style={styles.deleteText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))
-        ) : (
-          <Text style={styles.noInspectionsText}>
-            No inspections found. Create one to get started!
-          </Text>
+            
+        {/* Show Generate Report button ONLY for completed */}
+        {item.status === 'Completed' && (
+          <TouchableOpacity
+            style={styles.reportBtn}
+            onPress={() => navigation.navigate("ReportScreen", {
+                  property: item,
+                  notes:  item.notes ?? [],
+                })}
+          >
+            <Text style={styles.reportText}>Generate Report</Text>
+          </TouchableOpacity>
         )}
+          </View>
+        ))
+        ) : null}
+     
       </View>
 
       {/* Create Inspection Report Button */}
@@ -283,4 +268,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontStyle: 'italic',
   },
+   reportBtn: {
+    backgroundColor: '#FF8C00',
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  reportText: { color: 'white', fontWeight: 'bold' },
 });
