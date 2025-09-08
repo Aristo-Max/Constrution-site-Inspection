@@ -1,33 +1,48 @@
-import React, { useState, useMemo } from 'react';
+// src/screens/NewInspection.tsx
+
+import React, { useState, useMemo, useEffect } from 'react';
 import {
-  View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   Alert,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import colors from '../constants/color';
 import { useProperty } from '../components/PropertyContext';
 
-type NewInspectionScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'NewInspection'
->;
+type Props = NativeStackScreenProps<RootStackParamList, 'NewInspection'>;
 
-type Props = {
-  navigation: NewInspectionScreenNavigationProp;
-};
+const NewInspectionScreen = ({ navigation, route }: Props) => {
+  // ✅ CHECK FOR ID TO DETERMINE MODE (CREATE OR EDIT)
+  const inspectionId = route.params?.inspectionId;
+  const isEditMode = !!inspectionId;
 
-const NewInspectionScreen = ({ navigation }: Props) => {
-  const { addInspection } = useProperty(); // <-- GET addInspection FROM CONTEXT
+  const { addInspection, updateInspection, inspections } = useProperty();
+
   const [propertyName, setPropertyName] = useState('');
   const [propertyAddress, setPropertyAddress] = useState('');
   const [siteInspector, setSiteInspector] = useState('');
+
+  // ✅ IF IN EDIT MODE, LOAD THE EXISTING INSPECTION DATA
+  useEffect(() => {
+    if (isEditMode) {
+      const existingInspection = inspections.find(
+        insp => insp.id === inspectionId,
+      );
+      if (existingInspection) {
+        setPropertyName(existingInspection.name);
+        setPropertyAddress(existingInspection.address);
+        setSiteInspector(existingInspection.inspector);
+        navigation.setOptions({ title: 'Edit Inspection' }); // Update header title
+      }
+    } else {
+      navigation.setOptions({ title: 'Start New Inspection' });
+    }
+  }, [inspectionId, inspections, navigation, isEditMode]);
 
   const isFormValid = useMemo(() => {
     return (
@@ -37,24 +52,37 @@ const NewInspectionScreen = ({ navigation }: Props) => {
     );
   }, [propertyName, propertyAddress, siteInspector]);
 
-  const handleSaveInspection = async () => {
+  const handleSave = async () => {
     if (!isFormValid) {
       Alert.alert('Missing Information', 'Please fill out all fields.');
       return;
     }
 
     try {
-      // Create the data object without id, date, status
-      const newInspectionData = {
-        name: propertyName,
-        address: propertyAddress,
-        inspector: siteInspector,
-      };
-
-      // Call the context function to add and save
-      await addInspection(newInspectionData);
-
-      Alert.alert('Success', 'Inspection has been saved.');
+      if (isEditMode) {
+        // Find original inspection to preserve other details like notes and status
+        const originalInspection = inspections.find(
+          insp => insp.id === inspectionId,
+        );
+        if (originalInspection) {
+          const updatedData = {
+            ...originalInspection,
+            name: propertyName,
+            address: propertyAddress,
+            inspector: siteInspector,
+          };
+          await updateInspection(updatedData);
+          Alert.alert('Success', 'Inspection has been updated.');
+        }
+      } else {
+        const newInspectionData = {
+          name: propertyName,
+          address: propertyAddress,
+          inspector: siteInspector,
+        };
+        await addInspection(newInspectionData);
+        Alert.alert('Success', 'Inspection has been saved.');
+      }
       navigation.goBack();
     } catch (error) {
       console.error('Failed to save inspection:', error);
@@ -63,78 +91,59 @@ const NewInspectionScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Start New Inspection</Text>
-      </View>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.subtitle}>
-          Enter the details below to create a new inspection report.
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
+      <Text style={styles.label}>Property Name *</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="e.g., Maple Street Lot 4B"
+        placeholderTextColor={colors.textSecondary}
+        value={propertyName}
+        onChangeText={setPropertyName}
+      />
+
+      <Text style={styles.label}>Property Address / Location *</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="e.g., 123 Maple St, Anytown"
+        placeholderTextColor={colors.textSecondary}
+        value={propertyAddress}
+        onChangeText={setPropertyAddress}
+      />
+
+      <Text style={styles.label}>Site Inspector *</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="e.g., John Doe"
+        placeholderTextColor={colors.textSecondary}
+        value={siteInspector}
+        onChangeText={setSiteInspector}
+      />
+
+      <TouchableOpacity
+        style={[styles.button, !isFormValid && styles.buttonDisabled]}
+        onPress={handleSave}
+        disabled={!isFormValid}
+      >
+        {/* ✅ DYNAMIC BUTTON TEXT */}
+        <Text style={styles.buttonText}>
+          {isEditMode ? 'Update Inspection' : 'Save Inspection'}
         </Text>
-
-        <Text style={styles.label}>Property Name *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., Maple Street Lot 4B"
-          placeholderTextColor={colors.textSecondary}
-          value={propertyName}
-          onChangeText={setPropertyName}
-        />
-
-        <Text style={styles.label}>Property Address / Location *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., 123 Maple St, Anytown"
-          placeholderTextColor={colors.textSecondary}
-          value={propertyAddress}
-          onChangeText={setPropertyAddress}
-        />
-
-        <Text style={styles.label}>Site Inspector *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., John Doe"
-          placeholderTextColor={colors.textSecondary}
-          value={siteInspector}
-          onChangeText={setSiteInspector}
-        />
-
-        <TouchableOpacity
-          style={[styles.button, !isFormValid && styles.buttonDisabled]}
-          onPress={handleSaveInspection}
-          disabled={!isFormValid}
-        >
-          <Text style={styles.buttonText}>Save Inspection</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+      </TouchableOpacity>
+    </ScrollView>
   );
 };
 
+// Styles have been slightly adjusted for better layout
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.tertiary,
-  },
-  header: {
-    backgroundColor: colors.secondary,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
   container: {
-    padding: 20,
+    flex: 1,
+    backgroundColor: colors.white,
   },
-  subtitle: {
-    textAlign: 'center',
-    color: colors.textSecondary,
-    marginBottom: 30,
-    fontSize: 16,
+  contentContainer: {
+    padding: 20,
   },
   label: {
     fontSize: 14,
@@ -148,7 +157,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 15,
     marginBottom: 20,
-    backgroundColor: '#fff',
+    backgroundColor: colors.tertiary,
     color: colors.primary,
     fontSize: 16,
   },
@@ -157,7 +166,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 10,
   },
   buttonText: {
     color: colors.white,

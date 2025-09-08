@@ -1,61 +1,83 @@
-import React, { useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App'; // Adjust the path as necessary
-import colors from "../constants/color";  
+// src/screens/SplashScreen.tsx
 
-type SplashScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Splash'>;
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+} from 'react-native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../App';
+import colors from '../constants/color';
+
+type SplashScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'Splash'
+>;
 
 type SplashScreenProps = {
   navigation: SplashScreenNavigationProp;
-   onFinish: () => void;
+  onFinish: () => void;
 };
 
-
-
-const SplashScreen = ({ navigation, onFinish }: SplashScreenProps) => {
-
-//     useEffect(() => {
-//   setTimeout(() => {
-//     onFinish(); // call the prop
-//   }, 2000); // wait 2 sec
-// }, []);
-
+const SplashScreen = ({ onFinish }: SplashScreenProps) => {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Site Inspection App</Text>
-      <Text style={styles.subtitle}>
-        We need access to your camera & microphone to capture inspection photos
-        and notes.
-      </Text>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={onFinish}
-      >
-        <Text style={styles.buttonText}>Continue</Text>
-      </TouchableOpacity>
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        {/* Logo has been removed */}
+        <Text style={styles.title}>Welcome to Site Inspect Pro</Text>
+        <Text style={styles.subtitle}>
+          Your professional tool for on-site inspections. Please allow the
+          necessary permissions to continue.
+        </Text>
+        <TouchableOpacity style={styles.button} onPress={onFinish}>
+          <Text style={styles.buttonText}>Get Started</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
 export default SplashScreen;
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.white,
+  },
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: "#fff",
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
   },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20, textAlign: "center" },
-  subtitle: { fontSize: 16, color: "#555", textAlign: "center", marginBottom: 40 },
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: colors.primary,
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 50,
+    lineHeight: 24,
+  },
   button: {
     backgroundColor: colors.secondary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 15,
     borderRadius: 8,
+    alignItems: 'center',
+    width: '100%',
+    elevation: 2,
   },
-  buttonText: { color: "#fff", fontSize: 18 },
+  buttonText: {
+    color: colors.white,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
 });

@@ -1,279 +1,339 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
-import colors from "../constants/color";
-import { RouteProp, useRoute } from "@react-navigation/native";
+import React, { useState, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  TextInput,
+  SafeAreaView,
+  FlatList,
+} from 'react-native';
+import colors from '../constants/color';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App'; // Adjust the path as necessary
-import { useProperty } from "../components/PropertyContext";
+import { RootStackParamList } from '../App';
+import { useProperty, Inspection } from '../components/PropertyContext';
 
 type DashboardScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'Dashboard'
 >;
-
-type DashboardProps = {
-  navigation: DashboardScreenNavigationProp;
-};
-
-// export type NoteItem = {
-//   id: number;
-//   description: string;
-//   inspector: string;
-//   photos: string[];
-// };
-
-// export type PropertyDetails = {
-//   id: string;
-//   code: string;
-//   name: string;
-//   address?: string;
-//   status: "completed" | "in progress";
-//   date: string;
-//   notes: NoteItem[];
-// };
+type DashboardProps = { navigation: DashboardScreenNavigationProp };
 
 const DashboardScreen = ({ navigation }: DashboardProps) => {
-  //   const route = useRoute<RouteProp<RootStackParamList, "Dashboard">>(); // 👈 define route here
+  const { inspections, loading, deleteInspection } = useProperty();
 
-  // const { properties, setProperties } = useProperty();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
 
-    const { inspections, loading } = useProperty();
+  const filteredInspections = useMemo(() => {
+    let filtered = inspections;
+    if (statusFilter !== 'All') {
+      const isInProgress = statusFilter === 'In Progress';
+      filtered = filtered.filter(item =>
+        isInProgress
+          ? item.status === 'in progress' || item.status === 'In Progress'
+          : item.status === 'Completed',
+      );
+    }
+    if (searchQuery.trim() !== '') {
+      filtered = filtered.filter(
+        item =>
+          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.address.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
+    }
+    return filtered;
+  }, [inspections, searchQuery, statusFilter]);
+
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.center}>
         <ActivityIndicator size="large" />
       </View>
     );
   }
-//   useEffect(() => {
-//   if (route.params?.updatedNote && route.params?.propertyId) {
-//     const { updatedNote, propertyId } = route.params;
 
-//     setProperties(prev =>
-//       prev.map(p =>
-//         p.id === propertyId
-//           ? { ...p, notes: [...p.notes, updatedNote] } // ✅ updatedNote is guaranteed
-//           : p
-//       )
-//     );
-//   }
-// }, [route.params]);
+  const handleDeleteInspection = (
+    inspectionId: string,
+    inspectionName: string,
+  ) => {
+    Alert.alert(
+      'Delete Inspection',
+      `Are you sure you want to delete "${inspectionName}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteInspection(inspectionId),
+        },
+      ],
+    );
+  };
 
-  return (
-    <ScrollView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>InspectVoice Pro</Text>
-        <Text style={styles.headerSubtitle}>
-          Professional property inspections with voice-to-text technology
+  const renderFilterButton = (title: string) => (
+    <TouchableOpacity
+      style={[
+        styles.filterButton,
+        statusFilter === title && styles.filterButtonActive,
+      ]}
+      onPress={() => setStatusFilter(title)}
+    >
+      <Text
+        style={[
+          styles.filterButtonText,
+          statusFilter === title && styles.filterButtonTextActive,
+        ]}
+      >
+        {title}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const renderInspectionCard = ({ item }: { item: Inspection }) => (
+    <View style={styles.inspectionCard}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.inspectionTitle} numberOfLines={1}>
+          {item.name}
         </Text>
-        <TouchableOpacity style={styles.startButton} onPress={() => navigation.navigate('NewInspection')}>
-          <Text style={styles.startButtonText}>+ Start New Inspection</Text>
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('NewInspection', {
+              inspectionId: item.id,
+            })
+          }
+        >
+          <Text style={styles.editText}>Edit</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.inspectionAddress} numberOfLines={1}>
+        {item.address}
+      </Text>
+      <Text style={styles.meta}>
+        Status:{' '}
+        <Text
+          style={
+            item.status === 'Completed' ? styles.completed : styles.inProgress
+          }
+        >
+          {item.status}
+        </Text>
+      </Text>
+      <Text style={styles.meta}>
+        {new Date(item.date).toLocaleDateString()} • {item.notes?.length ?? 0}{' '}
+        notes
+      </Text>
+
+      <View style={styles.cardActions}>
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('InspectionForm', {
+              propertyId: item.id,
+            })
+          }
+        >
+          <Text style={styles.viewDetails}>Add / View Notes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => handleDeleteInspection(item.id, item.name)}
+        >
+          <Text style={styles.deleteText}>Delete</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Stats Row */}
-      <View style={styles.statsRow}>
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>{inspections.length}</Text>
-          <Text style={styles.statLabel}>Total Inspections</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>
-            {inspections.filter(item => item.status === 'In Progress').length}
-          </Text>
-          <Text style={styles.statLabel}>In Progress</Text>
+      {item.status === 'Completed' && (
+        <TouchableOpacity
+          style={styles.reportBtn}
+          onPress={() =>
+            navigation.navigate('ReportScreen', { property: item })
+          }
+        >
+          <Text style={styles.reportText}>Generate Report</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* FIXED HEADER */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Inspections</Text>
+        <TouchableOpacity
+          style={styles.startButton}
+          onPress={() => navigation.navigate('NewInspection')}
+        >
+          <Text style={styles.startButtonText}>+ New Inspection</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* FIXED CONTROLS */}
+      <View style={styles.controlsContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by name or address..."
+          placeholderTextColor={colors.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        <View style={styles.filterGroup}>
+          {renderFilterButton('All')}
+          {renderFilterButton('In Progress')}
+          {renderFilterButton('Completed')}
         </View>
       </View>
 
-      {/* Recent Inspections - NOW DYNAMIC */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Inspections</Text>
-        </View>
-           {inspections.length > 0 ? (
-          inspections.map((item)  => (
-          <View style={styles.inspectionCard}>
-            <Text style={styles.inspectionTitle}>
-              {item.name} <Text style={item.status === 'Completed' ? styles.completed : styles.inProgress}>
-                {item.status}
-              </Text>
-            </Text>
-            <Text style={styles.inspectionDate}>{item.date}</Text>
-              <Text>
-        {item.notes?.length ?? 0} notes •{" "}
-        {item.notes?.reduce((acc, note) => acc + (note.photos?.length ?? 0), 0) ?? 0} photos
-      </Text>
-             <TouchableOpacity onPress={() => navigation.replace("InspectionForm", {
-              propertyId: item.id,
-              properties: inspections,
-            })}>
-              <Text style={styles.viewDetails}>View / Add Notes</Text>
-            </TouchableOpacity>
-
-            
-        {/* Show Generate Report button ONLY for completed */}
-        {item.status === 'Completed' && (
-          <TouchableOpacity
-            style={styles.reportBtn}
-            onPress={() => navigation.navigate("ReportScreen", {
-                  property: item,
-                  notes:  item.notes ?? [],
-                })}
-          >
-            <Text style={styles.reportText}>Generate Report</Text>
-          </TouchableOpacity>
-        )}
-          </View>
-        ))
-        ) : null}
-     
-      </View>
-
-      {/* Create Inspection Report Button */}
-      <TouchableOpacity
-        style={styles.newReportButton}
-        onPress={() => navigation.navigate('NewInspection')}
-      >
-        <Text style={styles.newReportButtonText}>Create Inspection Report</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      {/* SCROLLABLE LIST */}
+      <FlatList
+        data={filteredInspections}
+        renderItem={renderInspectionCard}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.listContainer}
+        ListEmptyComponent={
+          <Text style={styles.noInspectionsText}>No inspections found.</Text>
+        }
+      />
+    </SafeAreaView>
   );
 };
 
 export default DashboardScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F7FA',
-    padding: 10,
-  },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: '#F5F7FA' },
   header: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.white,
     padding: 20,
-    alignItems: 'center',
+    paddingTop: 40,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   headerTitle: {
-    color: '#fff',
-    fontSize: 22,
+    color: colors.primary,
+    fontSize: 28,
     fontWeight: 'bold',
   },
-  headerSubtitle: {
-    color: '#E6E6E6',
-    fontSize: 14,
-    marginTop: 5,
-    textAlign: 'center',
+  startButton: {
+    position: 'absolute',
+    right: 20,
+    top: 45,
+    backgroundColor: colors.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
   },
-  statsRow: {
+  startButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  controlsContainer: {
+    padding: 15,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  searchInput: {
+    backgroundColor: colors.tertiary,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 15,
+    fontSize: 16,
+    color: colors.primary,
+  },
+  filterGroup: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginVertical: 20,
-    paddingHorizontal: 10,
   },
-  statBox: {
-    backgroundColor: colors.white,
-    flex: 1,
-    marginHorizontal: 5,
+  filterButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: colors.tertiary,
+  },
+  filterButtonActive: {
+    backgroundColor: colors.secondary,
+  },
+  filterButtonText: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  filterButtonTextActive: {
+    color: colors.white,
+  },
+  listContainer: {
     padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    elevation: 2,
-  },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.secondary,
-  },
-  statLabel: {
-    marginTop: 5,
-    fontSize: 12,
-    color: colors.primary,
-    textAlign: 'center',
-  },
-  section: {
-    marginHorizontal: 15,
-    marginBottom: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.primary,
   },
   inspectionCard: {
     backgroundColor: colors.white,
     padding: 15,
     borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 15,
     elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   inspectionTitle: {
     color: colors.primary,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 'bold',
+    flex: 1,
   },
-  inProgress: {
-    color: 'orange',
-    fontWeight: '600',
-  },
-  inspectionDate: {
-    fontSize: 12,
+  editText: {
     color: colors.primary,
-    marginTop: 2,
+    fontWeight: '600',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
+  inspectionAddress: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 10,
+  },
+  inProgress: { color: colors.secondary, fontWeight: 'bold' },
+  completed: { color: colors.success, fontWeight: 'bold' },
   meta: {
     fontSize: 12,
-    color: colors.primary,
-    marginVertical: 4,
-    marginBottom: 10,
+    color: colors.textSecondary,
+    marginBottom: 4,
   },
   cardActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
+    marginTop: 15,
     borderTopWidth: 1,
     borderTopColor: '#eee',
-    paddingTop: 10,
+    paddingTop: 15,
   },
-  viewDetails: {
-    color: colors.secondary,
-    fontWeight: '600',
+  viewDetails: { color: colors.secondary, fontWeight: 'bold', fontSize: 16 },
+  deleteText: { color: colors.error, fontWeight: 'bold', fontSize: 16 },
+  noInspectionsText: {
+    textAlign: 'center',
+    color: colors.textSecondary,
+    marginTop: 40,
+    fontStyle: 'italic',
   },
-  deleteText: {
-    color: colors.error,
-    fontWeight: '600',
-  },
-  newReportButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 15,
+  reportBtn: {
+    backgroundColor: colors.success,
+    marginTop: 15,
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
-    marginHorizontal: 15,
-    marginBottom: 20,
-    elevation: 3,
   },
-  newReportButtonText: {
+  reportText: {
     color: colors.white,
     fontWeight: 'bold',
     fontSize: 16,
   },
-  noInspectionsText: {
-    textAlign: 'center',
-    color: colors.textSecondary,
-    marginTop: 20,
-    fontStyle: 'italic',
-  },
-   reportBtn: {
-    backgroundColor: '#FF8C00',
-    marginTop: 10,
-    padding: 10,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  reportText: { color: 'white', fontWeight: 'bold' },
 });
