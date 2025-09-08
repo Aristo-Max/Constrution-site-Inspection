@@ -22,7 +22,7 @@ const colors = {
   // White color for text on dark backgrounds.
   white: '#FFFFFF',
 
-  success: '#2ECC71',
+  success: '#318152ff',
 };
 
 export default colors;
